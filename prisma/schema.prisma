@@ -1,0 +1,144 @@
+datasource db {
+    provider = "postgresql"
+    
+
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+model Machine {
+
+    idMachine Int @id @default(autoincrement())
+    codeMachine String @unique 
+    nomMachine String 
+    ligne Ligne 
+    zone String
+    statutMachine StatutMachine
+    descriptionMachine String?
+    criticite Criticite 
+    pannes Panne[]
+
+
+}
+
+enum Ligne {
+
+    FSB1 
+    FSB2
+}
+
+enum StatutMachine   {
+    MAINTENANCE
+    EN_PANNE
+    ACTIF
+}
+
+enum Criticite {
+    HAUTE
+    BASSE
+    MOYENNE
+} 
+
+model User {
+    idUser Int @id @default(autoincrement())
+    nomUser String
+    email String @unique
+    motDePasse String
+    role Role
+    pannes Panne[]
+    interventions Intervention[]
+    notifications Notification[]
+    auditLogs     AuditLog[]
+
+}
+
+enum Role {
+    ADMIN
+    RESPONSABLE_MAINTENANCE
+    TECHNICIEN
+    DEMANDEUR
+}
+
+model Panne { 
+    idPanne Int @id @default(autoincrement()) 
+    titre String
+    priorite Priorite 
+    statutPanne StatutPanne 
+    dateCreation DateTime @default(now())
+    categorie String
+    photoUrl String?
+    machine       Machine      @relation(fields: [machineId], references: [idMachine])
+    machineId     Int
+
+    technicien    User?        @relation(fields: [technicienId], references: [idUser])
+    technicienId  Int?
+    interventions Intervention[]
+    notifications Notification[]
+}
+
+enum Priorite {
+
+    CRITIQUE 
+    HAUTE
+    MOYENNE
+    BASSE   
+}
+
+enum StatutPanne {
+    RESOLU
+    EN_COURS
+    AFFECTE
+    NOUVEAU
+
+}
+
+model Intervention {
+    idIntervention Int @id @default(autoincrement())
+    diagnostic String
+    causeRacine String
+    solutionAppliquee String
+    piecesUtilisee String 
+    dateDebut DateTime
+    dateFin DateTime?
+    panne    Panne  @relation(fields: [panneId], references: [idPanne])
+    panneId  Int  
+    technicien    User    @relation(fields: [technicienId], references: [idUser])
+    technicienId  Int
+
+}
+
+// Historique de toutes les actions sensibles (créer/modifier/supprimer une panne ou une intervention).
+// utilisateurId est nullable et onDelete: SetNull : la trace reste même si le compte est supprimé plus tard.
+model AuditLog {
+    idAuditLog Int @id @default(autoincrement())
+    entite     String   // "Panne" | "Intervention"
+    entiteId   Int
+    action     String   // "CREATE" | "UPDATE" | "DELETE"
+    details    String?
+    dateAction DateTime @default(now())
+
+    utilisateur   User? @relation(fields: [utilisateurId], references: [idUser], onDelete: SetNull)
+    utilisateurId Int?
+
+    @@index([entite, entiteId])
+    @@index([dateAction])
+}
+
+// Notifications in-app (ex: panne critique déclarée). Le destinataire les consulte via la cloche du dashboard.
+model Notification {
+    idNotification Int @id @default(autoincrement())
+    titre        String
+    message      String
+    lu           Boolean @default(false)
+    dateCreation DateTime @default(now())
+
+    destinataire   User @relation(fields: [destinataireId], references: [idUser], onDelete: Cascade)
+    destinataireId Int
+
+    panne   Panne? @relation(fields: [panneId], references: [idPanne], onDelete: Cascade)
+    panneId Int?
+
+    @@index([destinataireId, lu])
+}

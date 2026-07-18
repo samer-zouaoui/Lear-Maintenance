@@ -1,0 +1,25 @@
+# Dépendances
+node_modules/
+
+# Variables d'environnement (secrets : DATABASE_URL, JWT_SECRET...)
+.env
+.env.*
+!.env.example
+
+# Prisma
+/src/generated/prisma
+
+# Fichiers uploadés par les utilisateurs (photos de pannes)
+/uploads/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Éditeurs
+.vscode/
+.idea/
