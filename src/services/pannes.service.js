@@ -2,10 +2,11 @@ import prisma from '../config/db.js';
 import * as auditService from './audit.service.js';
 import { notifierPanneCritique, notifierPanneAffectee } from './notifications.service.js';
 
-
-
 export async function addPanne(panneData, currentUser = null) {
-    const machine = await prisma.machine.findUnique({ where: { idMachine: panneData.machineId } });
+    const machine = await prisma.machine.findUnique({
+        where: { idMachine: panneData.machineId },
+        include: { ligne: { include: { projet: true } } },
+    });
     if (!machine) {
         throw new Error('La machine n\'existe pas');
     }
@@ -19,8 +20,8 @@ export async function addPanne(panneData, currentUser = null) {
         data: panneData
     });
     await prisma.machine.update({
-        where:{idMachine: panneData.machineId},
-        data:{statutMachine: 'EN_PANNE'}
+        where: { idMachine: panneData.machineId },
+        data: { statutMachine: 'EN_PANNE' }
     })
 
     auditService.logAction({
@@ -56,6 +57,11 @@ export async function updatePanne(id, panneData, currentUser = null) {
     }
 
     const machineId = panneExistante.machineId;
+
+    if (panneData.technicienId != null && panneData.technicienId !== panneExistante.technicienId) {
+        panneData.dateAffectation = new Date();
+    }
+
     const panneMiseAJour = await prisma.$transaction(async (tx) => {
         const updatedPanne = await tx.panne.update({
             where: { idPanne: id },
@@ -99,14 +105,19 @@ export async function updatePanne(id, panneData, currentUser = null) {
 }
 
 export async function getPannes() {
-    return await prisma.panne.findMany();
-}   
+    return await prisma.panne.findMany({
+        include: {
+            machine: { include: { ligne: { include: { projet: true } } } },
+            technicien: true,
+        },
+    });
+}
 
 export async function getPannesByTechnicienId(technicienId) {
     return await prisma.panne.findMany({
         where: { technicienId },
         include: {
-            machine: true,
+            machine: { include: { ligne: { include: { projet: true } } } },
             technicien: true,
         },
     });
@@ -114,39 +125,40 @@ export async function getPannesByTechnicienId(technicienId) {
 
 export async function getPanneById(id) {
     return await prisma.panne.findUnique({
-        where: { idPanne: id }
+        where: { idPanne: id },
+        include: {
+            machine: { include: { ligne: { include: { projet: true } } } },
+        },
     });
 }
 
 export async function getPanneDetailsById(id, currentUser = null) {
-        const panne = await prisma.panne.findUnique({
-                where: { idPanne: id },
+    const panne = await prisma.panne.findUnique({
+        where: { idPanne: id },
+        include: {
+            machine: { include: { ligne: { include: { projet: true } } } },
+            technicien: true,
+            interventions: {
                 include: {
-                    machine: true,
                     technicien: true,
-                    interventions: {
-                        include: {
-                            technicien: true,
-                        },
-                        orderBy: {
-                            dateDebut: 'desc',
-                        },
-                    },
                 },
-        });
+                orderBy: {
+                    dateDebut: 'desc',
+                },
+            },
+        },
+    });
 
-        if (!panne) {
-                return null;
-        }
+    if (!panne) {
+        return null;
+    }
 
-        if (currentUser?.role === 'TECHNICIEN' && panne.technicienId !== currentUser.idUser) {
-                throw new Error('Vous ne pouvez consulter que vos pannes affectées');
-        }
+    if (currentUser?.role === 'TECHNICIEN' && panne.technicienId !== currentUser.idUser) {
+        throw new Error('Vous ne pouvez consulter que vos pannes affectées');
+    }
 
-        return panne;
+    return panne;
 }
-
-
 
 export async function deletePanne(id, currentUser = null) {
     const panneExistante = await prisma.panne.findUnique({
@@ -195,6 +207,9 @@ export async function setPannePhoto(id, photoUrl, currentUser = null) {
 
 export async function getPannesByMachineId(machineId) {
     return await prisma.panne.findMany({
-        where: { machineId : machineId }
+        where: { machineId: machineId },
+        include: {
+            machine: { include: { ligne: { include: { projet: true } } } },
+        },
     });
 }

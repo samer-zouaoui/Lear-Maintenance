@@ -262,3 +262,85 @@ export async function getSerieQuotidienne(days) {
                 : 0,
         }));
 }
+// État en direct de l'atelier pour l'écran mural (tableau Andon) : toutes les machines actives,
+// groupées par ligne, avec la panne en cours le cas échéant (technicien affecté, depuis quand).
+// Machine.statutMachine est déjà tenu à jour en temps réel par pannes.service.js/interventions.service.js
+// (ACTIF / EN_PANNE / MAINTENANCE), donc pas besoin de recalcul lourd ici.
+export async function getEtatAtelier() {
+    const machines = await prisma.machine.findMany({
+        where: { archivee: false },
+        include: { ligne: { include: { projet: true } } },
+        orderBy: [{ ligne: { code: 'asc' } }, { zone: 'asc' }, { codeMachine: 'asc' }],
+    });
+
+    const machineIdsNonActives = machines.filter((m) => m.statutMachine !== 'ACTIF').map((m) => m.idMachine);
+
+    const pannesActives = machineIdsNonActives.length
+        ? await prisma.panne.findMany({
+              where: { machineId: { in: machineIdsNonActives }, statutPanne: { not: 'RESOLU' } },
+              include: { technicien: true },
+              orderBy: { dateCreation: 'desc' },
+          })
+        : [];
+
+    const panneParMachine = new Map();
+    for (const p of pannesActives) {
+        if (!panneParMachine.has(p.machineId)) panneParMachine.set(p.machineId, p);
+    }
+
+    const lignesMap = new Map();
+    for (const m of machines) {
+        const panne = panneParMachine.get(m.idMachine);
+        const machineEnrichie = {
+            idMachine: m.idMachine,
+            codeMachine: m.codeMachine,
+            nomMachine: m.nomMachine,
+            zone: m.zone,
+            statutMachine: m.statutMachine,
+            criticite: m.criticite,
+            panneActive: panne
+                ? {
+                      titre: panne.titre,
+                      statutPanne: panne.statutPanne,
+                      dateCreation: panne.dateCreation,
+                      technicien: panne.technicien ? { nomUser: panne.technicien.nomUser } : null,
+                  }
+                : null,
+        };
+
+        if (!lignesMap.has(m.ligneId)) {
+            lignesMap.set(m.ligneId, {
+                ligne: m.ligne.code,
+                projet: m.ligne.projet.code,
+                machines: [],
+            });
+        }
+        lignesMap.get(m.ligneId).machines.push(machineEnrichie);
+    }
+
+    const lignes = Array.from(lignesMap.values());
+
+    const total = machines.length;
+    const actives = machines.filter((m) => m.statutMachine === 'ACTIF').length;
+    const enPanne = machines.filter((m) => m.statutMachine === 'EN_PANNE').length;
+    const enMaintenance = machines.filter((m) => m.statutMachine === 'MAINTENANCE').length;
+
+    const dernierEvenement = await prisma.auditLog.findFirst({
+        where: { entite: { in: ['Panne', 'Intervention'] } },
+        orderBy: { dateAction: 'desc' },
+    });
+
+    return {
+        resume: {
+            total,
+            actives,
+            enPanne,
+            enMaintenance,
+            disponibilite: total > 0 ? Math.round((actives / total) * 100) : 100,
+        },
+        lignes,
+        dernierEvenement: dernierEvenement
+            ? { details: dernierEvenement.details, dateAction: dernierEvenement.dateAction }
+            : null,
+    };
+}

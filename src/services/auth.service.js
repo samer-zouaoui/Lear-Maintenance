@@ -1,4 +1,4 @@
-import prisma from '../config/db.js';   
+import prisma from '../config/db.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
@@ -40,14 +40,41 @@ export async function updateUser(id, userData) {
     });
 }   
 
-export async function deleteUser(id) {
-    return await prisma.user.delete({
-        where: { idUser: id }
+// "Supprimer" un compte ne le supprime jamais réellement en base : on le désactive.
+// Ça évite de perdre l'historique (interventions, maintenances préventives réalisées)
+// et ça évite tout crash de contrainte de clé étrangère.
+export async function deactivateUser(id) {
+    const user = await prisma.user.findUnique({ where: { idUser: id } });
+    if (!user) {
+        throw new Error('Utilisateur introuvable');
+    }
+
+    const { motDePasse, ...userMisAJour } = await prisma.user.update({
+        where: { idUser: id },
+        data: { actif: false },
     });
+    return userMisAJour;
 }
 
-export async function getAllUsers() {
-    return await prisma.user.findMany();
+export async function reactivateUser(id) {
+    const user = await prisma.user.findUnique({ where: { idUser: id } });
+    if (!user) {
+        throw new Error('Utilisateur introuvable');
+    }
+
+    const { motDePasse, ...userMisAJour } = await prisma.user.update({
+        where: { idUser: id },
+        data: { actif: true },
+    });
+    return userMisAJour;
+}
+
+// filtre : 'actifs' (défaut, comptes utilisables au quotidien) | 'inactifs' (désactivés) | 'tous'
+export async function getAllUsers(filtre = 'actifs') {
+    const where = filtre === 'inactifs' ? { actif: false } : filtre === 'tous' ? {} : { actif: true };
+
+    const users = await prisma.user.findMany({ where, orderBy: { idUser: 'asc' } });
+    return users.map(({ motDePasse, ...u }) => u);
 }
 
 
@@ -55,6 +82,9 @@ export async function loginUser(email, password) {
     const user = await getUserByEmail(email);
     if (!user) {
         throw new Error('Utilisateur non trouvé');
+    }
+    if (!user.actif) {
+        throw new Error('Ce compte a été désactivé. Contactez un administrateur.');
     }
     const isMatch = await bcrypt.compare(password, user.motDePasse);
     if (!isMatch) {

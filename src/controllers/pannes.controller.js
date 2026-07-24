@@ -1,4 +1,5 @@
 import * as pannesService from '../services/pannes.service.js';
+import { sendError } from '../utils/apiError.js';
 
 export async function getAllPannes(req, res) {
     try {
@@ -7,7 +8,7 @@ export async function getAllPannes(req, res) {
             : await pannesService.getPannes();
         res.json(pannes);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        sendError(res, error);
     }
 }
 
@@ -20,7 +21,7 @@ export async function getMyPannes(req, res) {
         const pannes = await pannesService.getPannesByTechnicienId(technicienId);
         res.json(pannes);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        sendError(res, error);
     }
 }
 
@@ -29,10 +30,10 @@ export async function createPanne(req, res) {
         const panne = await pannesService.addPanne(req.body, req.user);
         res.status(201).json(panne);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        sendError(res, error);
     }
-}   
- 
+}
+
 export async function getPanneById(req, res) {
     try {
         const id = parseInt(req.params.id);
@@ -40,10 +41,10 @@ export async function getPanneById(req, res) {
         if (panne) {
             res.json(panne);
         } else {
-            res.status(404).json({ error: "Panne not found" });
+            res.status(404).json({ error: "Panne introuvable" });
         }
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        sendError(res, error);
     }
 }
 
@@ -54,11 +55,10 @@ export async function getPanneDetailsById(req, res) {
         if (panne) {
             res.json(panne);
         } else {
-            res.status(404).json({ error: 'Panne not found' });
+            res.status(404).json({ error: 'Panne introuvable' });
         }
     } catch (error) {
-        const statusCode = error.message === 'Vous ne pouvez consulter que vos pannes affectées' ? 403 : 500;
-        res.status(statusCode).json({ error: error.message });
+        sendError(res, error, { 'Vous ne pouvez consulter que vos pannes affectées': 403 });
     }
 }
 
@@ -68,14 +68,11 @@ export async function updatePanne(req, res) {
         const panne = await pannesService.updatePanne(id, req.body, req.user);
         res.json(panne);
     } catch (error) {
-        const statusCode = error.message === 'Panne introuvable'
-            ? 404
-            : error.message === 'Vous ne pouvez modifier que vos pannes affectées'
-                ? 403
-                : error.message === 'Une panne résolue ne peut plus être modifiée'
-                    ? 403
-                    : 500;
-        res.status(statusCode).json({ error: error.message });
+        sendError(res, error, {
+            'Panne introuvable': 404,
+            'Vous ne pouvez modifier que vos pannes affectées': 403,
+            'Une panne résolue ne peut plus être modifiée': 403,
+        });
     }
 }
 
@@ -85,12 +82,10 @@ export async function deletePanne(req, res) {
         await pannesService.deletePanne(id, req.user);
         res.status(204).end();
     } catch (error) {
-        const statusCode = error.message === 'Panne introuvable'
-            ? 404
-            : error.message === 'Une panne résolue ne peut pas être supprimée'
-                ? 403
-                : 500;
-        res.status(statusCode).json({ error: error.message });
+        sendError(res, error, {
+            'Panne introuvable': 404,
+            'Une panne résolue ne peut pas être supprimée': 403,
+        });
     }
 }
 
@@ -104,12 +99,10 @@ export async function uploadPannePhoto(req, res) {
         const panne = await pannesService.setPannePhoto(id, photoUrl, req.user);
         res.json(panne);
     } catch (error) {
-        const statusCode = error.message === 'Panne introuvable'
-            ? 404
-            : error.message === 'Vous ne pouvez modifier que vos pannes affectées'
-                ? 403
-                : 500;
-        res.status(statusCode).json({ error: error.message });
+        sendError(res, error, {
+            'Panne introuvable': 404,
+            'Vous ne pouvez modifier que vos pannes affectées': 403,
+        });
     }
 }
 
@@ -119,6 +112,6 @@ export async function getPannesByMachineId(req, res) {
         const pannes = await pannesService.getPannesByMachineId(machineId);
         res.json(pannes);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        sendError(res, error);
     }
 }

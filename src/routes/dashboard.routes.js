@@ -15,5 +15,6 @@ router.get('/top-machines', dashboardController.getTopMachines);
 router.get('/top-causes', dashboardController.getTopCauses);
 router.get('/mtbf', dashboardController.getMTBF);
 router.get('/serie-quotidienne', dashboardController.getSerieQuotidienne);
+router.get('/atelier', dashboardController.getEtatAtelier);
 
 export default router;

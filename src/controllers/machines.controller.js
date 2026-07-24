@@ -1,56 +1,67 @@
 import * as machineService from "../services/machines.service.js";
+import { sendError } from '../utils/apiError.js';
 
-export async function getAllMachine(req , res){
-    try{
-    const machines = await machineService.getMachines();
-    res.json(machines) }
-    catch(error) {
-        res.status(500).json({error: error.message})
+// ?statut=actives (défaut) | archivees | toutes
+export async function getAllMachine(req, res) {
+    try {
+        const statut = req.query.statut || 'actives';
+        const machines = await machineService.getMachines(statut);
+        res.json(machines);
+    } catch (error) {
+        sendError(res, error);
     }
-
 }
 
 export async function createMachine(req, res) {
-    try{
-    const machine= await machineService.addMachine(req.body);
-    res.status(201).json(machine)
+    try {
+        const machine = await machineService.addMachine(req.body);
+        res.status(201).json(machine);
     } catch (error) {
-        res.status(500).json({error: error.message})
+        sendError(res, error);
     }
 }
 
-export async function getMachineById(req, res){
-    try{
+export async function getMachineById(req, res) {
+    try {
         const id = parseInt(req.params.id);
         const machine = await machineService.getMachineById(id);
-        if(machine){
+        if (machine) {
             res.json(machine);
         } else {
-            res.status(404).json({error: "Machine not found"});
-        }   
+            res.status(404).json({ error: "Machine introuvable" });
+        }
+    } catch (error) {
+        sendError(res, error);
     }
-    catch(error){
-        res.status(500).json({error: error.message})
-    }   
 }
 
-export async function updateMachine(req, res){
-    try{
-        const id=parseInt(req.params.id);
+export async function updateMachine(req, res) {
+    try {
+        const id = parseInt(req.params.id);
         const machine = await machineService.updateMachine(id, req.body);
         res.json(machine);
     } catch (error) {
-        res.status(500).json({error: error.message})
+        sendError(res, error);
     }
 }
 
-export async function deleteMachine(req, res){
-    try{
-        const id=parseInt(req.params.id);
-        await machineService.deleteMachine(id);
+// "Supprimer" une machine l'archive au lieu de la supprimer réellement (voir machines.service.js).
+export async function deleteMachine(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        await machineService.archiveMachine(id);
         res.status(204).end();
     } catch (error) {
-        res.status(500).json({error: error.message})
-    }   
+        sendError(res, error, { 'Machine introuvable': 404 });
+    }
 }
-    
+
+export async function reactivateMachine(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const machine = await machineService.reactivateMachine(id);
+        res.json(machine);
+    } catch (error) {
+        sendError(res, error, { 'Machine introuvable': 404 });
+    }
+}
