@@ -1,6 +1,5 @@
 import prisma from '../config/db.js';
 
-
 function buildDateFilter(days, offset = 0) {
     if (!days) return undefined;
     const untilDate = offset ? new Date(Date.now() - offset * 24 * 60 * 60 * 1000) : undefined;
@@ -33,9 +32,7 @@ export async function getMTTR(days, offset = 0) {
     return sommeDurees / interventions.length;
 }
 
-
 export async function getTauxDisponibilite() {
-    // Indicateur instantané (état actuel du parc machines) : pas de filtre de période applicable.
     const totalMachines = await prisma.machine.count();
 
     if (totalMachines === 0) {
@@ -50,7 +47,6 @@ export async function getTauxDisponibilite() {
 
     return (machinesActives / totalMachines) * 100;
 }
-
 
 export async function getClassementTechniciens(days) {
     const dateFilter = buildDateFilter(days);
@@ -90,7 +86,6 @@ export async function getClassementTechniciens(days) {
 }
 
 export async function getMachinesEnArret() {
-    // Indicateur instantané : pas de filtre de période applicable.
     return await prisma.machine.count({
         where: {
             statutMachine: {
@@ -122,7 +117,6 @@ export async function getDowntimeTotal(days, offset = 0) {
 
     return durees.reduce((accumulateur, valeurActuelle) => accumulateur + valeurActuelle, 0);
 }
-
 
 export async function getTopMachines(days) {
     const dateFilter = buildDateFilter(days);
@@ -211,10 +205,8 @@ export async function getMTBF(days, offset = 0) {
     return ecarts.reduce((a, b) => a + b, 0) / ecarts.length;
 }
 
-// Série jour par jour (pannes créées, downtime, MTTR) sur les `days` derniers jours.
-// Sert à alimenter les mini sparklines des cartes KPI du dashboard.
 export async function getSerieQuotidienne(days) {
-    const nbJours = days || 30; // par défaut (période "Tout") on affiche les 30 derniers jours
+    const nbJours = days || 30;
 
     const sinceDate = new Date(Date.now() - nbJours * 24 * 60 * 60 * 1000);
 
@@ -229,7 +221,6 @@ export async function getSerieQuotidienne(days) {
         }),
     ]);
 
-    // On initialise un compartiment par jour, du plus ancien au plus récent.
     const buckets = {};
     for (let i = nbJours - 1; i >= 0; i--) {
         const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
@@ -262,10 +253,7 @@ export async function getSerieQuotidienne(days) {
                 : 0,
         }));
 }
-// État en direct de l'atelier pour l'écran mural (tableau Andon) : toutes les machines actives,
-// groupées par ligne, avec la panne en cours le cas échéant (technicien affecté, depuis quand).
-// Machine.statutMachine est déjà tenu à jour en temps réel par pannes.service.js/interventions.service.js
-// (ACTIF / EN_PANNE / MAINTENANCE), donc pas besoin de recalcul lourd ici.
+
 export async function getEtatAtelier() {
     const machines = await prisma.machine.findMany({
         where: { archivee: false },
@@ -301,6 +289,7 @@ export async function getEtatAtelier() {
             panneActive: panne
                 ? {
                       titre: panne.titre,
+                      priorite: panne.priorite,
                       statutPanne: panne.statutPanne,
                       dateCreation: panne.dateCreation,
                       technicien: panne.technicien ? { nomUser: panne.technicien.nomUser } : null,
