@@ -1,5 +1,5 @@
 // URL de ton backend Express (Module Machines/Auth/Pannes/Interventions)
-export const API_URL = 'http://localhost:3000';
+export const API_URL = 'https://lear-maintenance.onrender.com';
 
 export function getToken() {
   if (typeof window === 'undefined') return null;

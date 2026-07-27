@@ -5,6 +5,8 @@ import { apiFetch, getCurrentUser } from '../../../lib/api';
 import { useToast } from '../../../components/ToastProvider';
 import ConfirmModal from '../../../components/ConfirmModal';
 import { SkeletonTable } from '../../../components/Skeleton';
+import QRCode from 'qrcode';
+import { jsPDF } from 'jspdf';
 
 const STATUT_BADGE = {
   ACTIF: 'badge-success',
@@ -110,8 +112,6 @@ export default function MachinesPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      // Une machine est toujours créée avec le statut ACTIF par défaut :
-      // ça n'a pas de sens de déclarer une machine déjà en panne ou en maintenance.
       const { projetId, ...rest } = form;
       await apiFetch('/machines', {
         method: 'POST',
@@ -157,6 +157,49 @@ export default function MachinesPage() {
     } finally {
       setReactivatingId(null);
     }
+  }
+
+  async function genererQrUnique(machine) {
+    const url = `${window.location.origin}/m/${machine.idMachine}`;
+    const dataUrl = await QRCode.toDataURL(url, { width: 400, margin: 2 });
+    const lien = document.createElement('a');
+    lien.href = dataUrl;
+    lien.download = `QR_${machine.codeMachine}.png`;
+    lien.click();
+  }
+
+  async function genererTousLesQr() {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const machinesActives = machines.filter((m) => !m.archivee);
+    const parLigne = 3;
+    const parColonne = 4;
+    const marge = 15;
+    const largeurCase = (210 - marge * 2) / parLigne;
+    const hauteurCase = (297 - marge * 2) / parColonne;
+
+    for (let i = 0; i < machinesActives.length; i++) {
+      const m = machinesActives[i];
+      const pageIndex = Math.floor(i / (parLigne * parColonne));
+      const indexSurPage = i % (parLigne * parColonne);
+      if (indexSurPage === 0 && i !== 0) doc.addPage();
+
+      const col = indexSurPage % parLigne;
+      const row = Math.floor(indexSurPage / parLigne);
+      const x = marge + col * largeurCase;
+      const y = marge + row * hauteurCase;
+
+      const url = `${window.location.origin}/m/${m.idMachine}`;
+      const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 1 });
+
+      const tailleQr = Math.min(largeurCase, hauteurCase) - 14;
+      doc.addImage(dataUrl, 'PNG', x + (largeurCase - tailleQr) / 2, y, tailleQr, tailleQr);
+      doc.setFontSize(9);
+      doc.text(m.codeMachine, x + largeurCase / 2, y + tailleQr + 5, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text(m.nomMachine, x + largeurCase / 2, y + tailleQr + 9, { align: 'center', maxWidth: largeurCase - 4 });
+    }
+
+    doc.save('QR_codes_machines.pdf');
   }
 
   return (
@@ -243,6 +286,9 @@ export default function MachinesPage() {
           <select value={statutFilter} onChange={(e) => setStatutFilter(e.target.value)}>
             {STATUT_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
+          <button className="btn btn-secondary" onClick={genererTousLesQr}>
+            Générer tous les QR codes (PDF)
+          </button>
         </div>
 
         <table>
@@ -284,17 +330,20 @@ export default function MachinesPage() {
                   </td>
                   <td><span className={`badge ${CRITICITE_BADGE[m.criticite] || 'badge-neutral'}`}>{m.criticite}</span></td>
                   <td>
-                    {m.archivee ? (
-                      <button
-                        className="btn btn-secondary"
-                        disabled={reactivatingId === m.idMachine}
-                        onClick={() => handleReactivate(m)}
-                      >
-                        {reactivatingId === m.idMachine ? 'Réactivation...' : 'Réactiver'}
-                      </button>
-                    ) : (
-                      <button className="btn btn-ghost" onClick={() => requestDelete(m)}>Archiver</button>
-                    )}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-ghost" onClick={() => genererQrUnique(m)}>QR</button>
+                      {m.archivee ? (
+                        <button
+                          className="btn btn-secondary"
+                          disabled={reactivatingId === m.idMachine}
+                          onClick={() => handleReactivate(m)}
+                        >
+                          {reactivatingId === m.idMachine ? 'Réactivation...' : 'Réactiver'}
+                        </button>
+                      ) : (
+                        <button className="btn btn-ghost" onClick={() => requestDelete(m)}>Archiver</button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
