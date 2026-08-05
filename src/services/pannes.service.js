@@ -205,6 +205,95 @@ export async function setPannePhoto(id, photoUrl, currentUser = null) {
     });
 }
 
+export async function prendreEnCharge(id, currentUser) {
+    const panne = await prisma.panne.findUnique({ where: { idPanne: id } });
+    if (!panne) {
+        throw new Error('Panne introuvable');
+    }
+    if (panne.statutPanne === 'RESOLU') {
+        throw new Error('Une panne résolue ne peut plus être modifiée');
+    }
+    if (panne.technicienId) {
+        throw new Error('Cette panne est déjà prise en charge');
+    }
+
+    const panneMiseAJour = await prisma.$transaction(async (tx) => {
+        const updated = await tx.panne.update({
+            where: { idPanne: id },
+            data: {
+                technicienId: currentUser.idUser,
+                statutPanne: 'AFFECTE',
+                dateAffectation: new Date(),
+            },
+        });
+        await tx.machine.update({
+            where: { idMachine: panne.machineId },
+            data: { statutMachine: 'MAINTENANCE' },
+        });
+        return updated;
+    });
+
+    auditService.logAction({
+        entite: 'Panne',
+        entiteId: id,
+        action: 'UPDATE',
+        details: `Panne prise en charge par ${currentUser.idUser}`,
+        utilisateurId: currentUser.idUser,
+    });
+
+    return panneMiseAJour;
+}
+
+export async function cloturerPanne(id, data, currentUser) {
+    const panne = await prisma.panne.findUnique({ where: { idPanne: id } });
+    if (!panne) {
+        throw new Error('Panne introuvable');
+    }
+    if (panne.statutPanne === 'RESOLU') {
+        throw new Error('Une panne résolue ne peut plus être modifiée');
+    }
+    if (panne.technicienId !== currentUser.idUser) {
+        throw new Error('Vous ne pouvez clôturer que vos pannes affectées');
+    }
+
+    const resultat = await prisma.$transaction(async (tx) => {
+        const intervention = await tx.intervention.create({
+            data: {
+                diagnostic: data.diagnostic,
+                causeRacine: data.causeRacine,
+                solutionAppliquee: data.solutionAppliquee,
+                piecesUtilisee: data.piecesUtilisee || '',
+                dateDebut: panne.dateAffectation || panne.dateCreation,
+                dateFin: new Date(),
+                panneId: id,
+                technicienId: currentUser.idUser,
+            },
+        });
+
+        const panneMiseAJour = await tx.panne.update({
+            where: { idPanne: id },
+            data: { statutPanne: 'RESOLU' },
+        });
+
+        await tx.machine.update({
+            where: { idMachine: panne.machineId },
+            data: { statutMachine: 'ACTIF' },
+        });
+
+        return { panne: panneMiseAJour, intervention };
+    });
+
+    auditService.logAction({
+        entite: 'Intervention',
+        entiteId: resultat.intervention.idIntervention,
+        action: 'CREATE',
+        details: `Panne #${id} clôturée`,
+        utilisateurId: currentUser.idUser,
+    });
+
+    return resultat;
+}
+
 export async function getPannesByMachineId(machineId) {
     return await prisma.panne.findMany({
         where: { machineId: machineId },

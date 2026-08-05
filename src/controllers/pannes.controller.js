@@ -115,3 +115,31 @@ export async function getPannesByMachineId(req, res) {
         sendError(res, error);
     }
 }
+
+export async function prendreEnCharge(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const panne = await pannesService.prendreEnCharge(id, req.user);
+        res.json(panne);
+    } catch (error) {
+        sendError(res, error, {
+            'Panne introuvable': 404,
+            'Une panne résolue ne peut plus être modifiée': 403,
+            'Cette panne est déjà prise en charge': 409,
+        });
+    }
+}
+
+export async function cloturerPanne(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const resultat = await pannesService.cloturerPanne(id, req.body, req.user);
+        res.json(resultat);
+    } catch (error) {
+        sendError(res, error, {
+            'Panne introuvable': 404,
+            'Une panne résolue ne peut plus être modifiée': 403,
+            'Vous ne pouvez clôturer que vos pannes affectées': 403,
+        });
+    }
+}

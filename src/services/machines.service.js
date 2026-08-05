@@ -55,3 +55,19 @@ export async function reactivateMachine(id) {
         data: { archivee: false },
     });
 }
+
+export async function getMachineForMobile(id) {
+    const machine = await prisma.machine.findUnique({
+        where: { idMachine: id },
+        include: { ligne: { include: { projet: true } } },
+    });
+    if (!machine) return null;
+
+    const panneActive = await prisma.panne.findFirst({
+        where: { machineId: id, statutPanne: { not: 'RESOLU' } },
+        include: { technicien: true },
+        orderBy: { dateCreation: 'desc' },
+    });
+
+    return { machine, panneActive };
+}

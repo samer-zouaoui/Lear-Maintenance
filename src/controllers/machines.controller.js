@@ -1,6 +1,7 @@
 import * as machineService from "../services/machines.service.js";
 import { sendError } from '../utils/apiError.js';
 
+
 // ?statut=actives (défaut) | archivees | toutes
 export async function getAllMachine(req, res) {
     try {
@@ -63,5 +64,18 @@ export async function reactivateMachine(req, res) {
         res.json(machine);
     } catch (error) {
         sendError(res, error, { 'Machine introuvable': 404 });
+    }
+}
+
+export async function getMachineForMobile(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const data = await machineService.getMachineForMobile(id);
+        if (!data) {
+            return res.status(404).json({ error: 'Machine introuvable' });
+        }
+        res.json(data);
+    } catch (error) {
+        sendError(res, error);
     }
 }
