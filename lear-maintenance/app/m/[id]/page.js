@@ -13,10 +13,23 @@ export default function MachineMobilePage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
-  const [declareForm, setDeclareForm] = useState({ titre: '', priorite: 'MOYENNE', categorie: '' });
+  const [justeDeclare, setJusteDeclare] = useState(false);
+ const [declareForm, setDeclareForm] = useState({ titre: TITRES[0], priorite: 'MOYENNE', categorie: CATEGORIES[0] });
   const [clotureForm, setClotureForm] = useState({ diagnostic: '', causeRacine: '', solutionAppliquee: '', piecesUtilisee: '' });
+const TITRES = [
+  'Panne moteur',
+  'Fuite hydraulique',
+  'Arrêt automate',
+  'Défaut capteur',
+  'Surchauffe',
+  'Bruit anormal',
+  'Vibration excessive',
+  'Défaut électrique',
+  'Blocage mécanique',
+  'Autre',
+];
 
+const CATEGORIES = ['Mécanique', 'Électrique', 'Hydraulique', 'Pneumatique', 'Automate/Logiciel', 'Autre'];
   useEffect(() => {
     if (!isLoggedIn()) {
       router.replace(`/login?redirect=/m/${id}`);
@@ -51,7 +64,8 @@ export default function MachineMobilePage() {
         body: JSON.stringify({ ...declareForm, machineId: Number(id), statutPanne: 'NOUVEAU' }),
       });
       notify('Panne déclarée', 'success');
-      setDeclareForm({ titre: '', priorite: 'MOYENNE', categorie: '' });
+      setDeclareForm({ titre: TITRES[0], priorite: 'MOYENNE', categorie: CATEGORIES[0] });
+      setJusteDeclare(true);
       await load();
     } catch (err) {
       notify(err.message, 'error');
@@ -99,6 +113,23 @@ export default function MachineMobilePage() {
   const estAffecteeAMoi = panneActive?.technicienId === currentUser?.idUser;
   const peutGererPannes = ['TECHNICIEN', 'RESPONSABLE_MAINTENANCE', 'ADMIN'].includes(currentUser?.role);
 
+  if (justeDeclare) {
+    return (
+      <div style={{ padding: 16, maxWidth: 480, margin: '0 auto' }}>
+        <div className="panel" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+          <h2 style={{ margin: '0 0 8px' }}>Panne déclarée</h2>
+          <p style={{ color: '#767981', fontSize: 14 }}>
+            La panne sur {data?.machine.codeMachine} a bien été enregistrée. Un technicien va être affecté.
+          </p>
+          <button className="btn btn-primary" style={{ width: '100%', marginTop: 12 }} onClick={() => setJusteDeclare(false)}>
+            OK
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: 16, maxWidth: 480, margin: '0 auto' }}>
       <div className="panel">
@@ -114,19 +145,21 @@ export default function MachineMobilePage() {
           <div className="panel-title">Déclarer une panne</div>
           <form onSubmit={handleDeclarer}>
             <label>Titre</label>
-            <input
+            <select
               value={declareForm.titre}
               onChange={(e) => setDeclareForm((f) => ({ ...f, titre: e.target.value }))}
-              required
               style={{ marginBottom: 10 }}
-            />
+            >
+              {TITRES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
             <label>Catégorie</label>
-            <input
+            <select
               value={declareForm.categorie}
               onChange={(e) => setDeclareForm((f) => ({ ...f, categorie: e.target.value }))}
-              required
               style={{ marginBottom: 10 }}
-            />
+            >
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
             <label>Priorité</label>
             <select
               value={declareForm.priorite}
