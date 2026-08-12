@@ -32,7 +32,6 @@ export default function MachineMobilePage() {
   const [declareForm, setDeclareForm] = useState({ titre: TITRES[0], priorite: 'MOYENNE', categorie: CATEGORIES[0] });
   const [clotureForm, setClotureForm] = useState({ diagnostic: '', causeRacine: '', solutionAppliquee: '', piecesUtilisee: '' });
 
-const CATEGORIES = ['Mécanique', 'Électrique', 'Hydraulique', 'Pneumatique', 'Automate/Logiciel', 'Autre'];
   useEffect(() => {
     if (!isLoggedIn()) {
       router.replace(`/login?redirect=/m/${id}`);
