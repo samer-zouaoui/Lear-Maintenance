@@ -5,17 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { apiFetch, getCurrentUser, isLoggedIn } from '../../../lib/api';
 import { useToast } from '../../../components/ToastProvider';
 
-export default function MachineMobilePage() {
-  const { id } = useParams();
-  const router = useRouter();
-  const notify = useToast();
-  const [currentUser, setCurrentUser] = useState(null);
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [justeDeclare, setJusteDeclare] = useState(false);
- const [declareForm, setDeclareForm] = useState({ titre: TITRES[0], priorite: 'MOYENNE', categorie: CATEGORIES[0] });
-  const [clotureForm, setClotureForm] = useState({ diagnostic: '', causeRacine: '', solutionAppliquee: '', piecesUtilisee: '' });
 const TITRES = [
   'Panne moteur',
   'Fuite hydraulique',
@@ -28,6 +17,20 @@ const TITRES = [
   'Blocage mécanique',
   'Autre',
 ];
+
+const CATEGORIES = ['Mécanique', 'Électrique', 'Hydraulique', 'Pneumatique', 'Automate/Logiciel', 'Autre'];
+
+export default function MachineMobilePage() {
+  const { id } = useParams();
+  const router = useRouter();
+  const notify = useToast();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [justeDeclare, setJusteDeclare] = useState(false);
+  const [declareForm, setDeclareForm] = useState({ titre: TITRES[0], priorite: 'MOYENNE', categorie: CATEGORIES[0] });
+  const [clotureForm, setClotureForm] = useState({ diagnostic: '', causeRacine: '', solutionAppliquee: '', piecesUtilisee: '' });
 
 const CATEGORIES = ['Mécanique', 'Électrique', 'Hydraulique', 'Pneumatique', 'Automate/Logiciel', 'Autre'];
   useEffect(() => {
