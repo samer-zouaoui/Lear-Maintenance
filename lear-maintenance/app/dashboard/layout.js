@@ -64,6 +64,7 @@ export default function DashboardLayout({ children }) {
   if (isAdmin) {
     navItems.push({ href: '/dashboard/users', label: 'Utilisateurs' });
     navItems.push({ href: '/dashboard/projets', label: 'Projets & Lignes' });
+    navItems.push({ href: '/dashboard/rapport-ia', label: 'Rapport IA' });
   }
 
   navItems.push({ href: '/atelier', label: 'Écran atelier' });
