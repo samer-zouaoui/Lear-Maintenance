@@ -1,5 +1,22 @@
 import * as pannesService from '../services/pannes.service.js';
 import { sendError } from '../utils/apiError.js';
+import { suggererDiagnostic } from '../services/diagnosticAgent.service.js';
+
+import { suggererDiagnostic } from '../services/diagnosticAgent.service.js';
+
+export async function getSuggestionIA(req, res) {
+    try {
+        const { titre, categorie, machineCode } = req.query;
+        if (!titre || !categorie) {
+            return res.status(400).json({ error: 'titre et categorie sont requis' });
+        }
+        const resultat = await suggererDiagnostic({ titre, categorie, machineCode });
+        res.json(resultat);
+    } catch (error) {
+        sendError(res, error);
+    }
+}
+
 
 export async function getAllPannes(req, res) {
     try {
