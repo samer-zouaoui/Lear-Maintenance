@@ -2,7 +2,6 @@ import * as pannesService from '../services/pannes.service.js';
 import { sendError } from '../utils/apiError.js';
 import { suggererDiagnostic } from '../services/diagnosticAgent.service.js';
 
-import { suggererDiagnostic } from '../services/diagnosticAgent.service.js';
 
 export async function getSuggestionIA(req, res) {
     try {
