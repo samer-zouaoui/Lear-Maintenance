@@ -8,10 +8,13 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
+// 1. Routes avec chemins statiques fixes
 router.get('/', panneController.getAllPannes);
 router.get('/me', panneController.getMyPannes);
-router.post('/', panneController.createPanne);
+router.get('/suggestion-ia', panneController.getSuggestionIA);
+
 router.get('/machine/:machineId', panneController.getPannesByMachineId);
+
 router.get('/:id/details', panneController.getPanneDetailsById);
 router.get('/:id', panneController.getPanneById);
 router.put('/:id', panneController.updatePanne);
@@ -19,6 +22,5 @@ router.delete('/:id', panneController.deletePanne);
 router.post('/:id/photo', uploadPannePhoto.single('photo'), panneController.uploadPannePhoto);
 router.put('/:id/prendre-en-charge', requireRole('TECHNICIEN', 'RESPONSABLE_MAINTENANCE', 'ADMIN'), panneController.prendreEnCharge);
 router.put('/:id/cloturer', requireRole('TECHNICIEN', 'RESPONSABLE_MAINTENANCE', 'ADMIN'), panneController.cloturerPanne);
-router.get('/suggestion-ia', panneController.getSuggestionIA);
 
 export default router;
