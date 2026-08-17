@@ -31,6 +31,8 @@ export default function MachineMobilePage() {
   const [justeDeclare, setJusteDeclare] = useState(false);
   const [declareForm, setDeclareForm] = useState({ titre: TITRES[0], priorite: 'MOYENNE', categorie: CATEGORIES[0] });
   const [clotureForm, setClotureForm] = useState({ diagnostic: '', causeRacine: '', solutionAppliquee: '', piecesUtilisee: '' });
+  const [suggestionIA, setSuggestionIA] = useState(null);
+  const [chargementSuggestion, setChargementSuggestion] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -86,6 +88,31 @@ export default function MachineMobilePage() {
       notify(err.message, 'error');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function chargerSuggestionIA() {
+    setChargementSuggestion(true);
+    try {
+      const params = new URLSearchParams({
+        titre: panneActive.titre,
+        categorie: panneActive.categorie || '',
+        machineCode: machine.codeMachine,
+      });
+      const resultat = await apiFetch(`/pannes/suggestion-ia?${params}`);
+      setSuggestionIA(resultat);
+      if (resultat.suggestionDisponible) {
+        setClotureForm((f) => ({
+          ...f,
+          diagnostic: resultat.suggestion.diagnostic,
+          causeRacine: resultat.suggestion.causeRacine,
+          solutionAppliquee: resultat.suggestion.solutionAppliquee,
+        }));
+      }
+    } catch (err) {
+      notify(err.message, 'error');
+    } finally {
+      setChargementSuggestion(false);
     }
   }
 
@@ -194,6 +221,18 @@ export default function MachineMobilePage() {
         <div className="panel">
           <div className="panel-title">Clôturer cette panne</div>
           <p>{panneActive.titre}</p>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={chargementSuggestion}
+            onClick={chargerSuggestionIA}
+            style={{ width: '100%', marginBottom: 14 }}
+          >
+            {chargementSuggestion ? 'Analyse en cours...' : '💡 Suggestion IA'}
+          </button>
+          {suggestionIA && !suggestionIA.suggestionDisponible && (
+            <p style={{ fontSize: 12, color: '#767981', marginBottom: 10 }}>{suggestionIA.message}</p>
+          )}
           <form onSubmit={handleCloturer}>
             <label>Diagnostic</label>
             <textarea

@@ -13,17 +13,42 @@ const emptyInterventionForm = {
   dateFin: '',
 };
 
-// Modale de clôture d'une panne (création de l'intervention + remise de la machine à ACTIF).
-// Réutilisée depuis "Mes pannes" et depuis la cloche de notifications.
 export default function CloturerPanneModal({ panne, onClose, onSuccess }) {
   const notify = useToast();
   const [form, setForm] = useState(emptyInterventionForm);
   const [submitting, setSubmitting] = useState(false);
+  const [suggestionIA, setSuggestionIA] = useState(null);
+  const [chargementSuggestion, setChargementSuggestion] = useState(false);
 
   if (!panne) return null;
 
   function updateField(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function chargerSuggestionIA() {
+    setChargementSuggestion(true);
+    try {
+      const params = new URLSearchParams({
+        titre: panne.titre,
+        categorie: panne.categorie || '',
+        machineCode: panne.machine?.codeMachine || '',
+      });
+      const resultat = await apiFetch(`/pannes/suggestion-ia?${params}`);
+      setSuggestionIA(resultat);
+      if (resultat.suggestionDisponible) {
+        setForm((f) => ({
+          ...f,
+          diagnostic: resultat.suggestion.diagnostic,
+          causeRacine: resultat.suggestion.causeRacine,
+          solutionAppliquee: resultat.suggestion.solutionAppliquee,
+        }));
+      }
+    } catch (err) {
+      notify(err.message, 'error');
+    } finally {
+      setChargementSuggestion(false);
+    }
   }
 
   async function handleSubmit(e) {
@@ -68,6 +93,19 @@ export default function CloturerPanneModal({ panne, onClose, onSuccess }) {
         <p style={{ fontSize: 13, color: '#767981', marginTop: -4, marginBottom: 16 }}>
           La clôture crée l&apos;intervention puis remet automatiquement la machine à l&apos;état ACTIF.
         </p>
+
+        <button
+          type="button"
+          className="btn btn-secondary"
+          disabled={chargementSuggestion}
+          onClick={chargerSuggestionIA}
+          style={{ marginBottom: 16 }}
+        >
+          {chargementSuggestion ? 'Analyse en cours...' : '💡 Suggestion IA'}
+        </button>
+        {suggestionIA && !suggestionIA.suggestionDisponible && (
+          <p style={{ fontSize: 12, color: '#767981', marginTop: -10, marginBottom: 16 }}>{suggestionIA.message}</p>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
