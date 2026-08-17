@@ -1,5 +1,18 @@
 import * as dashboardService from '../services/dashboard.service.js';
 import { sendError } from '../utils/apiError.js';
+import { genererRapportHebdomadaire } from '../services/reportAgent.service.js';
+
+
+
+export async function getRapportHebdomadaire(req, res) {
+    try {
+        const resultat = await genererRapportHebdomadaire();
+        res.json(resultat);
+    } catch (error) {
+        sendError(res, error);
+    }
+}
+
 
 // Lit ?days=7|30|90 sur la requête. Retourne undefined si absent ou invalide (= pas de filtre, période complète).
 function parseDays(req) {
