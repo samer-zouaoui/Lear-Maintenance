@@ -8,6 +8,7 @@ import { disconnectSocket } from '../../lib/socket';
 import ThemeToggle from '../../components/ThemeToggle';
 import UserAvatar from '../../components/UserAvatar';
 import NotificationBell from '../../components/NotificationBell';
+import AssistantChat from '../../components/AssistantChat';
 
 const ADMIN_ROLES = ['ADMIN'];
 const MAINTENANCE_ROLES = ['ADMIN', 'RESPONSABLE_MAINTENANCE'];
@@ -148,6 +149,7 @@ export default function DashboardLayout({ children }) {
         </div>
         <div className="content">{children}</div>
       </div>
+      <AssistantChat />
     </div>
   );
 }
