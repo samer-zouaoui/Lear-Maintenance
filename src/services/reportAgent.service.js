@@ -64,7 +64,7 @@ Rédige un résumé en français, clair et professionnel, destiné à un respons
 Reste factuel, base-toi uniquement sur les chiffres donnés, pas de chiffres inventés. Pas de titre, pas de liste à puces, juste les 3 paragraphes.`;
 
     const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-120b',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,
     });

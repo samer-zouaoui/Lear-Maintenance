@@ -11,6 +11,7 @@ import { verifierEtNotifierEcheancesDuJour } from './src/services/maintenance-pr
 import { initSocket } from './src/config/socket.js';
 import projetsRouter from './src/routes/projets.routes.js';
 import lignesRouter from './src/routes/lignes.routes.js';
+import assistantRouter from './src/routes/assistant.routes.js';
 
 import cors from 'cors';
 
@@ -34,7 +35,7 @@ app.use('/notifications', notificationRoutes);
 app.use('/maintenances-preventives', maintenancePreventiveRoutes);
 app.use('/projets', projetsRouter);
 app.use('/lignes', lignesRouter);
-
+app.use('/assistant', assistantRouter);
 
 // Route inconnue : message clair plutôt qu'une page HTML par défaut d'Express.
 app.use((req, res) => {
