@@ -104,4 +104,29 @@ export const outilRechercherMachines = tool(
   }
 );
 
-export const outilsDisponibles = [outilStatistiques, outilRechercherPannes, outilRechercherMachines];
+export const outilCompterEntites = tool(
+    async () => {
+        const [totalMachines, machinesActives, machinesEnPanne, machinesMaintenance, totalPannes, pannesEnCours, totalInterventions, totalProjets] = await Promise.all([
+            prisma.machine.count({ where: { archivee: false } }),
+            prisma.machine.count({ where: { archivee: false, statutMachine: 'ACTIF' } }),
+            prisma.machine.count({ where: { archivee: false, statutMachine: 'EN_PANNE' } }),
+            prisma.machine.count({ where: { archivee: false, statutMachine: 'MAINTENANCE' } }),
+            prisma.panne.count(),
+            prisma.panne.count({ where: { statutPanne: { not: 'RESOLU' } } }),
+            prisma.intervention.count(),
+            prisma.projet.count({ where: { actif: true } }),
+        ]);
+        return JSON.stringify({
+            totalMachines, machinesActives, machinesEnPanne, machinesMaintenance,
+            totalPannes, pannesEnCours, totalInterventions, totalProjets,
+        });
+    },
+    {
+        name: 'compter_entites',
+        description: 'Donne les COMPTAGES EXACTS et complets (pas limités) : nombre total de machines, machines par statut, nombre total de pannes, pannes en cours, nombre total d\u2019interventions, nombre de projets actifs. À utiliser en priorité pour toute question de type "combien de..." plutôt que rechercher_pannes/rechercher_machines qui sont limités à quelques résultats.',
+        schema: z.object({}),
+    }
+);
+
+export const outilsDisponibles = [outilStatistiques, outilRechercherPannes, outilRechercherMachines, outilCompterEntites];
+
