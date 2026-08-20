@@ -14,6 +14,7 @@ router.get('/me', panneController.getMyPannes);
 router.get('/suggestion-ia', panneController.getSuggestionIA);
 
 router.get('/machine/:machineId', panneController.getPannesByMachineId);
+router.post('/', panneController.createPanne);
 
 router.get('/:id/details', panneController.getPanneDetailsById);
 router.get('/:id', panneController.getPanneById);
