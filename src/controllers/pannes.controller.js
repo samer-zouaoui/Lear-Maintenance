@@ -1,7 +1,6 @@
 import * as pannesService from '../services/pannes.service.js';
 import { sendError } from '../utils/apiError.js';
-import { suggererDiagnostic } from '../services/diagnosticAgent.service.js';
-
+import { orchestrerDiagnostic } from '../services/orchestrator.service.js';
 
 export async function getSuggestionIA(req, res) {
     try {
@@ -9,7 +8,7 @@ export async function getSuggestionIA(req, res) {
         if (!titre || !categorie) {
             return res.status(400).json({ error: 'titre et categorie sont requis' });
         }
-        const resultat = await suggererDiagnostic({ titre, categorie, machineCode });
+        const resultat = await orchestrerDiagnostic({ titre, categorie, machineCode });
         res.json(resultat);
     } catch (error) {
         sendError(res, error);

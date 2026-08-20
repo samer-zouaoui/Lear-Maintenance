@@ -12,5 +12,5 @@ async function getEmbedder() {
 export async function genererEmbedding(texte) {
     const model = await getEmbedder();
     const resultat = await model(texte, { pooling: 'mean', normalize: true });
-    return Array.from(resultat.data); // vecteur de 384 dimensions
+    return Array.from(resultat.data); 
 }

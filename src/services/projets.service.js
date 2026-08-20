@@ -24,7 +24,6 @@ export async function updateProjet(id, data) {
     return await prisma.projet.update({ where: { idProjet: id }, data });
 }
 
-// Désactivation logique (comme pour les machines), pas de suppression réelle
 export async function desactiverProjet(id) {
     const projet = await prisma.projet.findUnique({ where: { idProjet: id } });
     if (!projet) throw new Error('Projet introuvable');
