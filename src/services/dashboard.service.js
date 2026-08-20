@@ -255,8 +255,11 @@ export async function getSerieQuotidienne(days) {
 }
 
 export async function getEtatAtelier() {
-    const machines = await prisma.machine.findMany({
-        where: { archivee: false },
+        const machines = await prisma.machine.findMany({
+        where: {
+            archivee: false,
+            ligne: { actif: true, projet: { actif: true } },
+        },
         include: { ligne: { include: { projet: true } } },
         orderBy: [{ ligne: { code: 'asc' } }, { zone: 'asc' }, { codeMachine: 'asc' }],
     });
