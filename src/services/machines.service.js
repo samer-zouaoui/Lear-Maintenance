@@ -9,14 +9,18 @@ export async function addMachine(machineData) {
 
 // filtre : 'actives' (défaut, parc en service) | 'archivees' | 'toutes'
 export async function getMachines(filtre = 'actives') {
-    const where = filtre === 'archivees' ? { archivee: true } : filtre === 'toutes' ? {} : { archivee: false };
+    const where = filtre === 'archivees'
+        ? { archivee: true }
+        : filtre === 'toutes'
+            ? {}
+            : { archivee: false, ligne: { actif: true, projet: { actif: true } } };
+
     return await prisma.machine.findMany({
         where,
         include: { ligne: { include: { projet: true } } },
         orderBy: { idMachine: 'asc' },
     });
 }
-
 export async function getMachineById(id) {
     return await prisma.machine.findUnique({
         where: { idMachine: id },
