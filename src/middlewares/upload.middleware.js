@@ -16,23 +16,19 @@ const storage = multer.diskStorage({
 
 const FORMATS_AUTORISES = ['.jpg', '.jpeg', '.png', '.webp'];
 
-const upload = multer({
-    storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024, 
-        files: 1,
-    },
-    fileFilter: (req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase();
-        if (!FORMATS_AUTORISES.includes(ext)) {
-            return cb(new Error('Format de fichier non autorisé'));
-        }
-        cb(null, true);
-    },
-});
+const fileFilter = (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!FORMATS_AUTORISES.includes(ext)) {
+        return cb(new Error('Format de fichier non autorisé'));
+    }
+    cb(null, true);
+};
 
 export const uploadPannePhoto = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5 Mo max
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5 Mo max
+        files: 1,
+    },
 });
