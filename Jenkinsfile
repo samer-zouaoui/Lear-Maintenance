@@ -13,6 +13,12 @@ pipeline {
             }
         }
 
+        stage('Debug workspace') {
+    steps {
+        sh 'pwd && ls -la && find . -name "*.js" -not -path "*/node_modules/*" | wc -l'
+    }
+}
+
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
