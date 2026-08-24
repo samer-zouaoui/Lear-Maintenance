@@ -1,5 +1,11 @@
-node_modules
 .env
+.env.*
 .git
-*.log
-uploads
+.gitignore
+node_modules
+npm-debug.log
+uploads/
+*.md
+.vscode
+Dockerfile
+docker-compose.yml
