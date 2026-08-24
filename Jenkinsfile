@@ -23,7 +23,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     script {
-                        // Utilise le nom d'outil configuré dans Jenkins Tools
+                        
                         def scannerHome = tool name: 'SonarScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
                         sh """
                             ${scannerHome}/bin/sonar-scanner \

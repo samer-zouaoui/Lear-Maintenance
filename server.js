@@ -66,3 +66,9 @@ httpServer.listen(3000, () => {
     verifierEtNotifierEcheancesDuJour();
     setInterval(verifierEtNotifierEcheancesDuJour, UN_JOUR_MS);
 });
+
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+};
+app.use(cors(corsOptions));
