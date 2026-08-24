@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "lear-maintenance-backend"
+        SONAR_PROJECT_KEY = "lear_maintenance"
     }
 
     stages {
@@ -14,16 +15,14 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                // 'SonarQube' doit correspondre au nom configuré dans Jenkins System
-                withSonarQubeEnv('SonarQube') { 
-                    // 'SonarScanner' doit correspondre au nom dans Global Tool Configuration
+                withSonarQubeEnv('SonarQube') {
                     script {
-                        def scannerHome = tool 'SonarScanner'
+                        // Utilise le nom d'outil configuré dans Jenkins Tools
+                        def scannerHome = tool name: 'SonarScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
                         sh """
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.sources=. \
-                            -Dsonar.java.binaries=target/classes
+                            -Dsonar.sources=.
                         """
                     }
                 }
@@ -32,7 +31,6 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                // Interrompt le pipeline si la qualité du code ne respecte pas les règles Sonar
                 timeout(time: 1, unit: 'HOURS') {
                     waitForQualityGate abortPipeline: true
                 }
