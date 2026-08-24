@@ -12,12 +12,6 @@ pipeline {
             }
         }
 
-        stage('Install dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
         stage('Build Docker image') {
             steps {
                 sh 'docker build -t $IMAGE_NAME:$BUILD_NUMBER .'
