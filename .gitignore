@@ -1,0 +1,19 @@
+# Dépendances Node.js (bloque node_modules partout)
+**/node_modules/
+node_modules/
+
+# Builds et cache Next.js (bloque .next partout)
+**/.next/
+.next/
+out/
+build/
+
+# Fichiers d'environnement et secrets
+.env
+.env.local
+.env.*
+
+# Logs et OS
+*.log
+.DS_Store
+Thumbs.db
