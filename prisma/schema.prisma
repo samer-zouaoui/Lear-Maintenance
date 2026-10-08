@@ -1,0 +1,218 @@
+datasource db {
+    provider = "postgresql"
+    
+
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+model Projet {
+  idProjet     Int      @id @default(autoincrement())
+  code         String   @unique          // ex: "MBEAM", "NCAR", "D-CORSS", "AYGO", "V530"
+  nom          String
+  actif        Boolean  @default(true)
+  dateCreation DateTime @default(now())
+
+  lignes       Ligne[]
+}
+
+model Ligne {
+  idLigne  Int      @id @default(autoincrement())
+  code     String                        // ex: "FSB1", "RSC2"
+  nom      String?
+  actif    Boolean  @default(true)
+
+  projet   Projet   @relation(fields: [projetId], references: [idProjet])
+  projetId Int
+
+  machines Machine[]
+
+  @@unique([projetId, code])
+}
+
+model Machine {
+  idMachine          Int      @id @default(autoincrement())
+  codeMachine        String   @unique
+  nomMachine         String
+  zone               String
+  statutMachine      StatutMachine
+  descriptionMachine String?
+  criticite          Criticite
+  archivee           Boolean  @default(false)
+
+  ligne              Ligne    @relation(fields: [ligneId], references: [idLigne])
+  ligneId            Int
+
+  pannes             Panne[]
+  plansPreventifs    PlanPreventif[]
+}
+enum StatutMachine   {
+    MAINTENANCE
+    EN_PANNE
+    ACTIF
+}
+
+enum Criticite {
+    HAUTE
+    BASSE
+    MOYENNE
+} 
+
+model User {
+    idUser Int @id @default(autoincrement())
+    nomUser String
+    email String @unique
+    motDePasse String
+    role Role
+    actif Boolean @default(true)
+    pannes Panne[]
+    interventions Intervention[]
+    notifications Notification[]
+    auditLogs     AuditLog[]
+    plansPreventifs PlanPreventif[]
+    historiquesMaintenance HistoriqueMaintenance[]
+
+}
+
+enum Role {
+    ADMIN
+    RESPONSABLE_MAINTENANCE
+    TECHNICIEN
+    DEMANDEUR
+}
+
+model Panne { 
+    idPanne Int @id @default(autoincrement()) 
+    titre String
+    priorite Priorite 
+    statutPanne StatutPanne 
+    dateCreation DateTime @default(now())
+    categorie String
+    photoUrl String?
+    machine       Machine      @relation(fields: [machineId], references: [idMachine])
+    machineId     Int
+
+    technicien    User?        @relation(fields: [technicienId], references: [idUser], onDelete: SetNull)
+    technicienId  Int?
+    dateAffectation DateTime?
+    interventions Intervention[]
+    notifications Notification[]
+}
+
+enum Priorite {
+
+    CRITIQUE 
+    HAUTE
+    MOYENNE
+    BASSE   
+}
+
+enum StatutPanne {
+    RESOLU
+    EN_COURS
+    AFFECTE
+    NOUVEAU
+
+}
+
+model Intervention {
+    idIntervention Int @id @default(autoincrement())
+    diagnostic String
+    causeRacine String
+    solutionAppliquee String
+    piecesUtilisee String 
+    dateDebut DateTime
+    dateFin DateTime?
+    panne    Panne  @relation(fields: [panneId], references: [idPanne])
+    panneId  Int  
+    technicien    User?    @relation(fields: [technicienId], references: [idUser], onDelete: SetNull)
+    technicienId  Int?
+
+}
+
+// Historique de toutes les actions sensibles (créer/modifier/supprimer une panne ou une intervention).
+// utilisateurId est nullable et onDelete: SetNull : la trace reste même si le compte est supprimé plus tard.
+model AuditLog {
+    idAuditLog Int @id @default(autoincrement())
+    entite     String   // "Panne" | "Intervention"
+    entiteId   Int
+    action     String   // "CREATE" | "UPDATE" | "DELETE"
+    details    String?
+    dateAction DateTime @default(now())
+
+    utilisateur   User? @relation(fields: [utilisateurId], references: [idUser], onDelete: SetNull)
+    utilisateurId Int?
+
+    @@index([entite, entiteId])
+    @@index([dateAction])
+}
+
+// Notifications in-app (ex: panne critique déclarée). Le destinataire les consulte via la cloche du dashboard.
+model Notification {
+    idNotification Int @id @default(autoincrement())
+    titre        String
+    message      String
+    lu           Boolean @default(false)
+    dateCreation DateTime @default(now())
+
+    destinataire   User @relation(fields: [destinataireId], references: [idUser], onDelete: Cascade)
+    destinataireId Int
+
+    panne   Panne? @relation(fields: [panneId], references: [idPanne], onDelete: Cascade)
+    panneId Int?
+
+    @@index([destinataireId, lu])
+}
+
+enum FrequenceMaintenance {
+    QUOTIDIENNE
+    HEBDOMADAIRE
+    MENSUELLE
+    TRIMESTRIELLE
+    ANNUELLE
+}
+
+enum StatutPlanPreventif {
+    ACTIF
+    INACTIF
+}
+
+// Plan de maintenance préventive récurrent sur une machine (ex: "vidange toutes les 90 jours").
+// dateProchaine est recalculée à chaque réalisation (dateProchaine = dateRealisation + intervalleJours).
+model PlanPreventif {
+    idPlan Int @id @default(autoincrement())
+    titre String
+    description String?
+    frequence FrequenceMaintenance
+    intervalleJours Int
+    dateDerniereRealisation DateTime?
+    dateProchaine DateTime
+    statut StatutPlanPreventif @default(ACTIF)
+    dateCreation DateTime @default(now())
+
+    machine   Machine @relation(fields: [machineId], references: [idMachine], onDelete: Cascade)
+    machineId Int
+
+    technicien   User? @relation(fields: [technicienId], references: [idUser], onDelete: SetNull)
+    technicienId Int?
+    dateAffectation DateTime?
+
+    historique HistoriqueMaintenance[]
+
+    @@index([dateProchaine, statut])
+}
+
+// Trace de chaque réalisation d'un plan préventif (qui, quand, remarque).
+model HistoriqueMaintenance {
+    idHistorique    Int      @id @default(autoincrement())
+    dateRealisation DateTime @default(now())
+    remarque        String?
+
+    plan   PlanPreventif @relation(fields: [planId], references: [idPlan], onDelete: Cascade)
+    planId Int
+
+    technicien   User? @relation(fields: [technicienId], references: [idUser], onDelete: SetNull)
+    technicienId Int?
+}

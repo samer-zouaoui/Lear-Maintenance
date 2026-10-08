@@ -1,19 +1,33 @@
-# Dépendances Node.js (bloque node_modules partout)
+# Dépendances Node.js
 **/node_modules/
 node_modules/
 
-# Builds et cache Next.js (bloque .next partout)
+# Builds et cache Next.js
 **/.next/
 .next/
 out/
 build/
 
-# Fichiers d'environnement et secrets
+# Variables d'environnement (secrets)
 .env
 .env.local
 .env.*
+!.env.example
 
-# Logs et OS
+# Prisma
+/src/generated/prisma
+
+# Fichiers uploadés par les utilisateurs
+/uploads/
+
+# Logs
+npm-debug.log*
 *.log
+
+# Système
 .DS_Store
 Thumbs.db
+
+# Éditeurs
+.vscode/
+.idea/
